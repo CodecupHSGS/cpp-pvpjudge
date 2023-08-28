@@ -77,6 +77,7 @@ public:
             }
 
             // execute file
+            cerr << ("./" + fileName).c_str() << endl; 
             execl(("./" + fileName).c_str(), ("./" + fileName).c_str(), NULL);
             perror("execl");
 
@@ -128,7 +129,7 @@ public:
                 buffer[0] = '\0';
             }
         }
-        cerr << "line read: '" << s << "'" << endl;
+        cerr << "from " << childId << "line read: '" << s << "'" << endl;
         return true;
     }
 
@@ -238,12 +239,13 @@ private:
             exit(1);
         }
 
-        limit.rlim_cur = 0;
-        limit.rlim_max = 0;
-        if (setrlimit(RLIMIT_NOFILE, &limit) < 0) {
-            cerr << "sandboxing failed for " << getpid() << endl;
-            exit(1);
-        }
+        // struct rlimit noFileLimit; 
+        // noFileLimit.rlim_cur = 0;
+        // noFileLimit.rlim_max = 0;
+        // if (setrlimit(RLIMIT_NOFILE, &noFileLimit) < 0) {
+        //     cerr << "sandboxing failed for " << getpid() << endl;
+        //     exit(1);
+        // }
 
         // const char *sandbox_profile = "(version 1)(deny default)(allow file-write* (subpath \".\"))";
 
@@ -306,7 +308,12 @@ public:
 
         // get time limit
         judge->readLine(judgein);
-        judgein >> type; assert(type=="time"); judgein >> _timeLimit;
+        judgein >> type; 
+
+        cerr << type << endl; 
+
+        assert(type=="time"); 
+        judgein >> _timeLimit;
         
         for(int i = 0; i <= 1; i++) {
             players[i]->setResource(10 * _timeLimit, 64, _timeLimit);

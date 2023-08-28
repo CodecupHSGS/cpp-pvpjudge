@@ -9,16 +9,22 @@ from utils import compileFile
 
 class Hub:
 
-    def __init__(self, judge_cnt, judge_dir, p1_dir, p2_dir, log_dir, socket_url):
+    def __init__(self, judge_cnt, judge_dir, p1_file_dir, p2_file_dir, judge_file_dir, log_dir, socket_url):
         self.judges = []
         self.problems = [] 
         self.judgeCnt = judge_cnt
         self.judgeDir = judge_dir
-        self.p1Dir = p1_dir
-        self.p2Dir = p2_dir
+        self.p1FileDir = p1_file_dir
+        self.p2FileDir = p2_file_dir
+        self.judgeFileDir = judge_file_dir
         self.logDir = log_dir
         self.submission_queue = deque()
-        self.socket_client = SocketClient(socket_url)
+        
+        try: 
+            self.socket_client = SocketClient(socket_url)
+        except: 
+            print("Connecting with socket server met with exception")
+        
         sDir = os.path.join(judge_dir, 'scaffold')
         for i in range(judge_cnt):
             jDir = os.path.join(judge_dir, f'judge{i}')  
@@ -35,14 +41,16 @@ class Hub:
             judge_dir = self.judgeDir
         for i in range(judge_cnt):
             jDir = os.path.join(judge_dir, f'judge{i}') 
-            shutil.rmtree(jDir)
+            if os.path.isdir(jDir): 
+                shutil.rmtree(jDir)
 
     def __del__(self):
         self.clearJudges()
 
-    def addSubmission(self, player1_file, player2_file, submission_id):
-        player1_file.save(os.path.join(self.p1Dir, f'{submission_id}.{player1_file.filename.split(".")[-1]}'))
-        player2_file.save(os.path.join(self.p2Dir, f'{submission_id}.{player2_file.filename.split(".")[-1]}'))
+    def addSubmission(self, player1_file, player2_file, judge_file, submission_id):
+        player1_file.save(os.path.join(self.p1FileDir, f'{submission_id}.{player1_file.filename.split(".")[-1]}'))
+        player2_file.save(os.path.join(self.p2FileDir, f'{submission_id}.{player2_file.filename.split(".")[-1]}'))
+        judge_file.save(os.path.join(self.judgeFileDir, f'{submission_id}.{judge_file.filename.split(".")[-1]}'))
         self.submission_queue.append(submission_id)
         self.runNextSubmission()
 
@@ -52,11 +60,15 @@ class Hub:
                 if self.submission_queue:
                     submission_id = self.submission_queue.popleft()
                     judge.markAsOccupied()
-                    player1_file = glob.glob(os.path.join(self.p1Dir, f'{submission_id}.*'))[0]
-                    player2_file = glob.glob(os.path.join(self.p2Dir, f'{submission_id}.*'))[0]
-                    judge.saveFiles(player1_file, player2_file, submission_id)
+                    player1_file = glob.glob(os.path.join(self.p1FileDir, f'{submission_id}.*'))[0]
+                    player2_file = glob.glob(os.path.join(self.p2FileDir, f'{submission_id}.*'))[0]
+                    judge_file = glob.glob(os.path.join(self.judgeFileDir, f'{submission_id}.*'))[0]
+                    judge.saveFiles(player1_file, player2_file, judge_file, submission_id)
                     judge.runAndMarkAsUnoccupied()
-                    self.socket_client.finishJudge(self.submission_id)
+                    try: 
+                        self.socket_client.finishJudge(submission_id)
+                    except: 
+                        print("Notififying socket server of finishing judge met with exception")
                     break 
     
 class Judge:
@@ -73,14 +85,14 @@ class Judge:
         self.isOccupied = False
         self.hub.judgeComplete(self)
 
-    def saveFiles(self, player1_filepath, player2_filepath, submission_id):
+    def saveFiles(self, player1_filepath, player2_filepath, judge_file_path, submission_id):
         compileFile(player1_filepath, f'{self.folderPath}/p1root/player1')
         compileFile(player2_filepath, f'{self.folderPath}/p2root/player2')
+        compileFile(judge_file_path, f'{self.folderPath}/judge')
         self.subId = submission_id
 
     def runAndMarkAsUnoccupied(self):
         compileFile(f'{self.folderPath}/gameMaster.cpp', f'{self.folderPath}/gameMaster')
-        compileFile(f'{self.folderPath}/judge.cpp', f'{self.folderPath}/judge')
 
         subprocess.run(['./gameMaster'], cwd=self.folderPath)
         shutil.copy(f'{self.folderPath}/log.txt', f'{self.logDir}/{self.subId}.txt')

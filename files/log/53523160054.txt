@@ -1,0 +1,9 @@
+test
+player1: 1
+player2: 2
+player1: 1
+player2: 2
+player1: 1
+player2: 2
+player1: 1
+winner 1 valid
