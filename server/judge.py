@@ -9,7 +9,7 @@ from utils import compileFile
 
 class Hub:
 
-    def __init__(self, judge_cnt, judge_dir, p1_file_dir, p2_file_dir, judge_file_dir, log_dir, socket_url):
+    def __init__(self, judge_cnt, judge_dir, p1_file_dir, p2_file_dir, judge_file_dir, log_dir, result_dir, socket_url):
         self.judges = []
         self.problems = [] 
         self.judgeCnt = judge_cnt
@@ -18,6 +18,7 @@ class Hub:
         self.p2FileDir = p2_file_dir
         self.judgeFileDir = judge_file_dir
         self.logDir = log_dir
+        self.resultDir = result_dir
         self.submission_queue = deque()
         
         try: 
@@ -29,7 +30,7 @@ class Hub:
         for i in range(judge_cnt):
             jDir = os.path.join(judge_dir, f'judge{i}')  
             shutil.copytree(sDir, jDir, dirs_exist_ok=True)
-            self.judges.append(Judge(jDir, self.logDir, self))
+            self.judges.append(Judge(jDir, self.logDir, self.resultDir, self))
 
     def judgeComplete(self, judge):
         if self.submission_queue:
@@ -67,14 +68,16 @@ class Hub:
                     judge.runAndMarkAsUnoccupied()
                     try: 
                         self.socket_client.finishJudge(submission_id)
-                    except: 
+                    except Exception as err: 
                         print("Notififying socket server of finishing judge met with exception")
+                        print(err)
                     break 
     
 class Judge:
-    def __init__(self, judge_dir, log_dir, hub):
+    def __init__(self, judge_dir, log_dir, resultDir, hub):
         self.hub = hub
         self.logDir = log_dir
+        self.resultDir = resultDir
         self.isOccupied = False
         self.folderPath = judge_dir
 
@@ -96,4 +99,5 @@ class Judge:
 
         subprocess.run(['./gameMaster'], cwd=self.folderPath)
         shutil.copy(f'{self.folderPath}/log.txt', f'{self.logDir}/{self.subId}.txt')
+        shutil.copy(f'{self.folderPath}/result.json', f'{self.resultDir}/{self.subId}.json')
         self.markAsUnoccupied()

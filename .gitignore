@@ -10,3 +10,6 @@ issues.txt
 p1files/*
 p2files/*
 logs/*
+files/*
+server/__pycache__/*
+server_env/*

@@ -6,6 +6,7 @@ import os
 from dotenv import load_dotenv
 import time
 import random
+import json
 
 load_dotenv()
 
@@ -17,6 +18,7 @@ judge_file_dir = os.getenv("JUDGE_FILE_DIR")
 p1_file_dir = os.getenv("P1_FILE_DIR")
 p2_file_dir = os.getenv("P2_FILE_DIR")
 log_dir = os.getenv("LOG_DIR")
+result_dir = os.getenv("RESULT_DIR")
 
 socket_url = os.getenv("SOCKET_URL")
 
@@ -27,7 +29,9 @@ hub = Hub(
     p2_file_dir=p2_file_dir,
     judge_file_dir=judge_file_dir,
     log_dir=log_dir,
-    socket_url=socket_url)
+    result_dir=result_dir, 
+    socket_url=socket_url
+)
 
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -48,14 +52,27 @@ def submit():
     hub.addSubmission(p1File, p2File, judgeFile, submission_id)
     return {'message': 'Submission received.', 'submission_id': submission_id}, 200
 
-@app.route('/result/<submissionId>', methods=['POST'])
+@app.route('/result/<submissionId>', methods=['GET'])
 def result(submissionId):
+    result_file_path = os.path.join(hub.resultDir, f'{submissionId}.json')
+    
+    if os.path.exists(result_file_path):
+        with open(result_file_path, "r") as result_file: 
+            result = json.load(result_file)
+        return jsonify({'result': result}), 200
+    else:
+        return jsonify({'message': "Result file not found"}), 400
+
+@app.route('/log/<submissionId>', methods=['GET'])
+def log(submissionId): 
     log_file_path = os.path.join(hub.logDir, f'{submissionId}.txt')
     
-    if os.path.exists(log_file_path):
-        return jsonify({'message': True}), send_from_directory(hub.logDir, f'{submissionId}.txt')
+    if os.path.exists(log_file_path):           
+        # needs os.getcwd() instead of plain hub.logdir 
+        # in case an user runs the app from outside server/     
+        return send_from_directory(os.path.join(os.getcwd(), hub.logDir), f'{submissionId}.txt')
     else:
-        return jsonify({'message': False, 'file': ''}), 400
+        return jsonify({'message': "Log file not found"}), 400
 
 if __name__ == '__main__':
     app.run(port=8080, debug=True)

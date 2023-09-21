@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <format>
 // not available on OS X, because why would it
 #ifndef __APPLE__
 #include <seccomp.h>
@@ -423,7 +424,9 @@ int main() {
         if(winner != -1) {
             gameM.waitJudge();
             ofstream logout("log.txt", ofstream::app);
+            ofstream resultout("result.json"); 
             logout <<"winner " << winner << " " << reason << endl;
+            resultout << "\{\"winner\":" << winner << ", \"reason\":\"" << reason << "\"\}";
             break;
         }
     }
