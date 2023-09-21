@@ -33,6 +33,19 @@ hub = Hub(
     socket_url=socket_url
 )
 
+try: 
+    hub.connectToSocketServer()
+except: 
+    print("Failed to connect to the socket server when initializing hub")
+
+@app.route("/connect")
+def connect(): 
+    print("Received notification that the socket server is online")
+    try:  
+        hub.connectToSocketServer()
+    except: 
+        print("Failed to create socket connection after being notified")
+
 @app.route('/submit', methods=['POST'])
 def submit():
     print(request.files.keys())

@@ -21,10 +21,8 @@ class Hub:
         self.resultDir = result_dir
         self.submission_queue = deque()
         
-        try: 
-            self.socket_client = SocketClient(socket_url)
-        except: 
-            print("Connecting with socket server met with exception")
+        self.socket_url = socket_url
+        self.socket_client = None
         
         sDir = os.path.join(judge_dir, 'scaffold')
         for i in range(judge_cnt):
@@ -32,6 +30,9 @@ class Hub:
             shutil.copytree(sDir, jDir, dirs_exist_ok=True)
             self.judges.append(Judge(jDir, self.logDir, self.resultDir, self))
 
+    def connectToSocketServer(self): 
+        self.socket_client = SocketClient(self.socket_url)
+    
     def judgeComplete(self, judge):
         if self.submission_queue:
             self.runNextSubmission()
@@ -66,11 +67,16 @@ class Hub:
                     judge_file = glob.glob(os.path.join(self.judgeFileDir, f'{submission_id}.*'))[0]
                     judge.saveFiles(player1_file, player2_file, judge_file, submission_id)
                     judge.runAndMarkAsUnoccupied()
-                    try: 
-                        self.socket_client.finishJudge(submission_id)
-                    except Exception as err: 
-                        print("Notififying socket server of finishing judge met with exception")
-                        print(err)
+                    
+                    if self.socket_client is None:  
+                        print("Warning: not connected to socket server. Failed to notify about finishing judge")
+                    else: 
+                        try: 
+                            self.socket_client.finishJudge(submission_id)
+                        except Exception as err: 
+                            print("Notififying socket server of finishing judge met with exception: ")
+                            print(err)
+                    
                     break 
     
 class Judge:
