@@ -2,6 +2,9 @@ import socketio
 import eventlet
 
 class SocketClient:
+    '''Wrapper class for socketio.Client()
+    '''
+    
     def __init__(self, socket_url):
         self.sio = socketio.Client()
         self.socket_url = socket_url
@@ -16,8 +19,8 @@ class SocketClient:
         print("Socket disconnected")
 
     def finishJudge(self, submission_id):
+        print(f"Emitting the event of finishing judging #{submission_id} to the server",flush=True)
         self.sio.emit('finish_judge', submission_id)
-        print(f"Judged {submission_id}")
 
 if __name__ == "__main__":
     socket_url = "http://localhost:6969"
