@@ -10,6 +10,7 @@ import json
 
 # Load environment varaibles
 load_dotenv()
+app_port = int(os.getenv("APP_PORT"))
 judge_cnt = int(os.getenv("JUDGE_COUNT"))
 judge_dir = os.getenv("JUDGE_DIR")
 judge_file_dir = os.getenv("JUDGE_FILE_DIR")
@@ -17,7 +18,7 @@ p1_file_dir = os.getenv("P1_FILE_DIR")
 p2_file_dir = os.getenv("P2_FILE_DIR")
 log_dir = os.getenv("LOG_DIR")
 result_dir = os.getenv("RESULT_DIR")
-socket_url = os.getenv("SOCKET_URL")
+socket_server_url = os.getenv("SOCKET_SERVER_URL")
 
 # Create a new Flask instance
 app = Flask(__name__)
@@ -33,7 +34,7 @@ hub = Hub(
     judge_file_dir=judge_file_dir,
     log_dir=log_dir,
     result_dir=result_dir, 
-    socket_url=socket_url
+    socket_server_url=socket_server_url
 )
 
 # Attempt to connect to the backend's socket server. 
@@ -107,8 +108,13 @@ def result(submissionId):
     result_file_path = os.path.join(hub.resultDir, f'{submissionId}.json')
     
     if os.path.exists(result_file_path):
+        # load the file into memory
         with open(result_file_path, "r") as result_file: 
             result = json.load(result_file)
+            
+        # delete the file 
+        os.remove(result_file_path)
+        
         return jsonify({'result': result}), 200
     else:
         return jsonify({'message': "Result file not found"}), 400
@@ -125,10 +131,15 @@ def log(submissionId):
     if os.path.exists(log_file_path):           
         # os.getcwd() is appended before hub.logdir 
         # in case an user runs the app from outside server/     
-        return send_from_directory(os.path.join(os.getcwd(), hub.logDir), f'{submissionId}.txt')
+        file = send_from_directory(os.path.join(os.getcwd(), hub.logDir), f'{submissionId}.txt')
+        
+        # delete the file after loading into memory
+        os.remove(log_file_path)
+        
+        return file
     else:
         return jsonify({'message': "Log file not found"}), 400
 
 if __name__ == '__main__':
-    app.run(port=8080, debug=True)
+    app.run(port=app_port, debug=True)
     

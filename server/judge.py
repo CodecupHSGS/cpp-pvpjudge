@@ -13,7 +13,7 @@ class Hub:
     Class to run the submissions fed by the judge server and notify the backend when judging is finished 
     via a socket connection
     '''
-    def __init__(self, judge_cnt, judge_dir, p1_file_dir, p2_file_dir, judge_file_dir, log_dir, result_dir, socket_url):
+    def __init__(self, judge_cnt, judge_dir, p1_file_dir, p2_file_dir, judge_file_dir, log_dir, result_dir, socket_server_url):
         self.judges = []
         self.problems = [] 
         
@@ -35,7 +35,7 @@ class Hub:
         # Submission queue
         self.submission_queue = deque()
         
-        self.socket_url = socket_url
+        self.socket_server_url = socket_server_url
         self.socket_client = None
         
         # A thread that listen to incoming submissions and run them. 
@@ -51,7 +51,7 @@ class Hub:
             self.judges.append(Judge(jDir, self.logDir, self.resultDir, self))
 
     def connectToSocketServer(self): 
-        self.socket_client = SocketClient(self.socket_url)
+        self.socket_client = SocketClient(self.socket_server_url)
 
     def clearJudges(self, judge_cnt = None, judge_dir = None):
         '''
@@ -105,7 +105,7 @@ class Hub:
         Method to run the next submission and attempt to notify the backend when judging is finished. 
         If submission_queue is empty, raise an exception.
         '''
-        if self.submission_queue.empty(): 
+        if not self.submission_queue: 
             raise Exception("Attempting to run the next submission when the queue is empty")
         
         for judge in self.judges:
@@ -166,12 +166,17 @@ class Judge:
     def saveFiles(self, player1_filepath, player2_filepath, judge_file_path, submission_id):
         '''
         Method to compile the submissions' files and populating the resulting executable 
-        into the working directory 
+        into the working directory. Remove the source files after compiling them. 
         '''
         
         compileFile(player1_filepath, f'{self.folderPath}/p1root/player1')
         compileFile(player2_filepath, f'{self.folderPath}/p2root/player2')
         compileFile(judge_file_path, f'{self.folderPath}/judge')
+        
+        # Remove the source files
+        os.remove(player1_filepath)
+        os.remove(player2_filepath)
+        os.remove(judge_file_path)
         
         self.subId = submission_id
 

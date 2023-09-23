@@ -1,1 +1,0 @@
-player ./p1root/joined on process 4938

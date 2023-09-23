@@ -1,15 +1,34 @@
-*gameMaster
-*judge
-*player1
-*player2
+# temporary files 
+files/judge/*
+files/log/*
+files/player1/*
+files/player2/*
+files/result/*
+
+# executable files
+judges/scaffold/gameMaster
+judges/scaffold/p1root/*
+judges/scaffold/p2root/*
+
+#clone folders
+judges/judge*
+
 *.DS_Store
 *scaffold/.DS_Store
-*judges/judge*
+
+# Ignore docker file for now. Will include when needed
+Dockerfile
+
+# environment files
 *.env
-issues.txt
-p1files/*
-p2files/*
-logs/*
-files/*
+
+# log files
+*log.txt
+
 server/__pycache__/*
+__pycache__
+
+# environment file
 server_env/*
+
+.vscode/*
