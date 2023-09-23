@@ -1,24 +1,28 @@
 from flask import Flask, request, send_from_directory, jsonify
 from werkzeug.utils import secure_filename
 import threading
-from judge import Hub
 import os
 from dotenv import load_dotenv
 import time
 import random
 import json
 
+from .judge import Hub
+
 # Load environment varaibles
 load_dotenv()
-app_port = int(os.getenv("APP_PORT"))
 judge_cnt = int(os.getenv("JUDGE_COUNT"))
-judge_dir = os.getenv("JUDGE_DIR")
-judge_file_dir = os.getenv("JUDGE_FILE_DIR")
-p1_file_dir = os.getenv("P1_FILE_DIR")
-p2_file_dir = os.getenv("P2_FILE_DIR")
-log_dir = os.getenv("LOG_DIR")
-result_dir = os.getenv("RESULT_DIR")
 socket_server_url = os.getenv("SOCKET_SERVER_URL")
+print("Judge count: ", judge_cnt)
+print("Socket server URL: ", socket_server_url)
+
+# Working directories and directories for temporary files
+judge_dir = "./judges"
+judge_file_dir = "./files/judge"
+p1_file_dir = "./files/player1"
+p2_file_dir = "./files/player2"
+log_dir = "./files/log"
+result_dir = "./files/result"
 
 # Create a new Flask instance
 app = Flask(__name__)
@@ -50,6 +54,11 @@ except:
     
 # Create a new thread to run submissions 
 hub.startConsumingSubmissions()
+
+@app.route("/")
+def hello(): 
+    print("Hello, user!")
+    return "Hello, user"
 
 @app.route("/connect")
 def connect(): 
@@ -126,6 +135,7 @@ def log(submissionId):
     If the log file does exist, return the file. 
     Otherwise, return a message for explanation
     '''
+    
     log_file_path = os.path.join(hub.logDir, f'{submissionId}.txt')
     
     if os.path.exists(log_file_path):           
@@ -139,7 +149,4 @@ def log(submissionId):
         return file
     else:
         return jsonify({'message': "Log file not found"}), 400
-
-if __name__ == '__main__':
-    app.run(port=app_port, debug=True)
     

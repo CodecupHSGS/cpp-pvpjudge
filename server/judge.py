@@ -3,10 +3,11 @@ import glob
 import shutil
 import subprocess
 import threading
-from emitjudge import SocketClient
 from werkzeug.utils import secure_filename
 from collections import deque
-from utils import compileFile
+
+from .utils import compileFile
+from .emitjudge import SocketClient
 
 class Hub:
     '''

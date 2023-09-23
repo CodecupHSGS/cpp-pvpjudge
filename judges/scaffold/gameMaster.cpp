@@ -1,4 +1,7 @@
 #include <iostream>
+#include <stdio.h>
+#include <string.h>
+#include <assert.h>
 #include <fstream>
 #include <string>
 #include <cstdio>
@@ -7,14 +10,13 @@
 #include <unistd.h>
 #include <poll.h>
 #include <sstream>
-#include <sandbox.h>
+// #include <sandbox.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include <format>
 // not available on OS X, because why would it
 #ifndef __APPLE__
-#include <seccomp.h>
+// #include <seccomp.h>
 #endif
 
 using namespace std;
@@ -204,25 +206,25 @@ private:
     }
 
     void setRestriction(string fileRoot) {
-        struct rlimit limit;
+        // struct rlimit limit;
 
-        // limit cpu time
-        limit.rlim_cur = (cpuTime - 1) / 1000 + 3;
-        limit.rlim_max = (cpuTime - 1) / 1000 + 3;
-        if (setrlimit(RLIMIT_CPU, &limit) < 0) {
-            cerr << "limit cpu time failed for " << getpid() << endl;
-            exit(1);
-        }
+        // // limit cpu time
+        // limit.rlim_cur = (cpuTime - 1) / 1000 + 3;
+        // limit.rlim_max = (cpuTime - 1) / 1000 + 3;
+        // if (setrlimit(RLIMIT_CPU, &limit) < 0) {
+        //     cerr << "limit cpu time failed for " << getpid() << endl;
+        //     exit(1);
+        // }
 
-        // limit mem usage (this is really getting on my nerves now https://developer.apple.com/forums/thread/702803)
-        #ifndef __APPLE__
-        limit.rlim_cur = 1ll * ramMb * 1024 * 1024;
-        limit.rlim_max = 1ll * ramMb * 1024 * 1024;
-        if (setrlimit(RLIMIT_AS, &limit) < 0) {
-            cerr << "limit ram failed for " << getpid() << endl;
-            exit(1);
-        }
-        #endif
+        // // limit mem usage (this is really getting on my nerves now https://developer.apple.com/forums/thread/702803)
+        // #ifndef __APPLE__
+        // limit.rlim_cur = 1ll * ramMb * 1024 * 1024;
+        // limit.rlim_max = 1ll * ramMb * 1024 * 1024;
+        // if (setrlimit(RLIMIT_AS, &limit) < 0) {
+        //     cerr << "limit ram failed for " << getpid() << endl;
+        //     exit(1);
+        // }
+        // #endif
 
         // sandbox process file access
         #ifndef __APPLE__
@@ -230,8 +232,8 @@ private:
             cerr << "i cant even test this" << endl;
             exit(EXIT_FAILURE);
         }
-        chdir("/");
-        // chroot(fileRoot.c_str());
+        cerr << "Setting restriction for non-apple platform"; 
+        chdir(fileRoot.c_str());
         #endif
 
         #ifdef __APPLE__
@@ -248,28 +250,28 @@ private:
         //     exit(1);
         // }
 
-        // const char *sandbox_profile = "(version 1)(deny default)(allow file-write* (subpath \".\"))";
+        const char *sandbox_profile = "(version 1)(deny default)(allow file-write* (subpath \".\"))";
 
-        // char *errorbuf;
-        // int result = sandbox_init(sandbox_profile, SANDBOX_NAMED, &errorbuf);
-        // if (result != 0) {
-        //     std::cerr << "sandbox_init failed: " << errorbuf << '\n';
-        //     sandbox_free_error(errorbuf);
-        //     exit(1);
-        // }
+        char *errorbuf;
+        int result = sandbox_init(sandbox_profile, SANDBOX_NAMED, &errorbuf);
+        if (result != 0) {
+            std::cerr << "sandbox_init failed: " << errorbuf << '\n';
+            sandbox_free_error(errorbuf);
+            exit(1);
+        }
         #endif
 
         ofstream fout("playerlog.txt", ofstream::out);
         fout<<"player " << fileRoot << "joined on process " << getpid() << endl;
 
         //kill syscalls
-        #ifndef __APPLE__
-        scmp_filter_ctx ctx;
-        ctx = seccomp_init(SCMP_ACT_ALLOW);
-        seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(execve), 0);
-        seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(socket), 0);
-        seccomp_load(ctx);
-        #endif
+        // #ifndef __APPLE__
+        // scmp_filter_ctx ctx;
+        // ctx = seccomp_init(SCMP_ACT_ALLOW);
+        // seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(execve), 0);
+        // seccomp_rule_add(ctx, SCMP_ACT_KILL, SCMP_SYS(socket), 0);
+        // seccomp_load(ctx);
+        // #endif
     }
 };
 

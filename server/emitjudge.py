@@ -1,5 +1,4 @@
 import socketio
-import eventlet
 
 class SocketClient:
     '''Wrapper class for socketio.Client()

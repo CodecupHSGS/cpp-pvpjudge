@@ -6,6 +6,7 @@ click==8.1.7
 dnspython==2.4.2
 eventlet==0.33.3
 Flask==2.3.3
+gunicorn
 greenlet==2.0.2
 h11==0.14.0
 idna==3.4
@@ -19,6 +20,7 @@ requests==2.31.0
 simple-websocket==0.10.1
 six==1.16.0
 urllib3==2.0.5
+watchdog==3.0.0
 websocket-client==1.6.3
 Werkzeug==2.3.7
 wsproto==1.2.0

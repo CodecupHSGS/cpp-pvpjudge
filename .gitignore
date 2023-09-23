@@ -16,12 +16,6 @@ judges/judge*
 *.DS_Store
 *scaffold/.DS_Store
 
-# Ignore docker file for now. Will include when needed
-Dockerfile
-
-# environment files
-*.env
-
 # log files
 *log.txt
 
