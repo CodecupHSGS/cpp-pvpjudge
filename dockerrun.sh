@@ -1,0 +1,1 @@
+docker run -p 9000:9000 -e SOCKET_SERVER_URL=http://host.docker.internal:8000 hoanggiapvuvhg/cpp-pvp-judge
