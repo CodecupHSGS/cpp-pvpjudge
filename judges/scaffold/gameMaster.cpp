@@ -13,6 +13,8 @@
 // #include <sandbox.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/resource.h>
+#include <sys/time.h>
 #include <signal.h>
 // not available on OS X, because why would it
 #ifndef __APPLE__
@@ -192,7 +194,10 @@ public:
     }
 
     void killProcess() {
-        kill(childId, SIGTERM);
+        // kill with sigterm let the child process clean up, so we need sigkill
+        // on the other hand, this means the judge files and player files must flush after each print, 
+        // otherwise it won't be seen. 
+        kill(childId, SIGKILL);
     }
 
     int getTimeLeft() {
@@ -206,25 +211,25 @@ private:
     }
 
     void setRestriction(string fileRoot) {
-        // struct rlimit limit;
+        struct rlimit limit;
 
-        // // limit cpu time
-        // limit.rlim_cur = (cpuTime - 1) / 1000 + 3;
-        // limit.rlim_max = (cpuTime - 1) / 1000 + 3;
-        // if (setrlimit(RLIMIT_CPU, &limit) < 0) {
-        //     cerr << "limit cpu time failed for " << getpid() << endl;
-        //     exit(1);
-        // }
+        // limit cpu time
+        limit.rlim_cur = (cpuTime - 1) / 1000 + 3;
+        limit.rlim_max = (cpuTime - 1) / 1000 + 3;
+        if (setrlimit(RLIMIT_CPU, &limit) < 0) {
+            cerr << "limit cpu time failed for " << getpid() << endl;
+            exit(1);
+        }
 
-        // // limit mem usage (this is really getting on my nerves now https://developer.apple.com/forums/thread/702803)
-        // #ifndef __APPLE__
-        // limit.rlim_cur = 1ll * ramMb * 1024 * 1024;
-        // limit.rlim_max = 1ll * ramMb * 1024 * 1024;
-        // if (setrlimit(RLIMIT_AS, &limit) < 0) {
-        //     cerr << "limit ram failed for " << getpid() << endl;
-        //     exit(1);
-        // }
-        // #endif
+        // limit mem usage (this is really getting on my nerves now https://developer.apple.com/forums/thread/702803)
+        #ifndef __APPLE__
+        limit.rlim_cur = 1ll * ramMb * 1024 * 1024;
+        limit.rlim_max = 1ll * ramMb * 1024 * 1024;
+        if (setrlimit(RLIMIT_AS, &limit) < 0) {
+            cerr << "limit ram failed for " << getpid() << endl;
+            exit(1);
+        }
+        #endif
 
         // sandbox process file access
         #ifndef __APPLE__
@@ -250,15 +255,15 @@ private:
         //     exit(1);
         // }
 
-        const char *sandbox_profile = "(version 1)(deny default)(allow file-write* (subpath \".\"))";
+        // const char *sandbox_profile = "(version 1)(deny default)(allow file-write* (subpath \".\"))";
 
-        char *errorbuf;
-        int result = sandbox_init(sandbox_profile, SANDBOX_NAMED, &errorbuf);
-        if (result != 0) {
-            std::cerr << "sandbox_init failed: " << errorbuf << '\n';
-            sandbox_free_error(errorbuf);
-            exit(1);
-        }
+        // char *errorbuf;
+        // int result = sandbox_init(sandbox_profile, SANDBOX_NAMED, &errorbuf);
+        // if (result != 0) {
+            // std::cerr << "sandbox_init failed: " << errorbuf << '\n';
+            // sandbox_free_error(errorbuf);
+            // exit(1);
+        // }
         #endif
 
         ofstream fout("playerlog.txt", ofstream::out);
@@ -344,8 +349,12 @@ public:
         return curPlayer ^ 1;
     }
 
-    void waitJudge() {
-        judge->waitFile();
+    // void waitJudge() {
+    //     judge->waitFile();
+    // }
+
+    void killJudge() { 
+        judge->killProcess(); 
     }
 
     void killPlayerProcess() {
@@ -414,17 +423,16 @@ int main() {
             case game::TurnResult::win:
                 winner = gameM.getCurPlayer() + 1; reason = "valid"; break;
             case game::TurnResult::lose:
-                winner = gameM.getCurPlayer() ^ 1 + 1; reason = "valid"; break;
+                winner = (gameM.getCurPlayer() ^ 1) + 1; reason = "valid"; break;
             case game::TurnResult::timeout:
-                winner = gameM.getCurPlayer() ^ 1 + 1; reason = "timeout"; break;
+                winner = (gameM.getCurPlayer() ^ 1) + 1; reason = "timeout"; break;
             case game::TurnResult::invalid:
-                winner = gameM.getCurPlayer() ^ 1 + 1; reason = "invalid"; break;
+                winner = (gameM.getCurPlayer() ^ 1) + 1; reason = "invalid"; break;
             default:
                 break;
         }
         cerr << gameM.getCurPlayer() << " this turn is: " << winner << endl;
         if(winner != -1) {
-            gameM.waitJudge();
             ofstream logout("log.txt", ofstream::app);
             ofstream resultout("result.json"); 
             logout <<"winner " << winner << " " << reason << endl;
@@ -432,5 +440,6 @@ int main() {
             break;
         }
     }
+    gameM.killJudge();
     gameM.killPlayerProcess();
 }
