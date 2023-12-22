@@ -6,7 +6,7 @@ The server receives matches via POST requests containing a judge file and two pl
 
 Users can then get the match results and the game log via GET requests. Note that the server will remove the results once the requests are finished.
 
-Currently, the server only supports .cpp files; there will be support for Python files in the future). 
+Currently, the server only supports .cpp files; there will be support for Python files in the future. 
 
 ## How to run the server 
 Step 1: Pull the image _hoanggiapvuvhg/cpp-pvp-judge_ from Dockerhub. On Ubuntu: 
